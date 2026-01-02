@@ -268,8 +268,8 @@ function BlockchainTab({ blockchain }: { blockchain: Blockchain }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             variant={viewMode === 'releases' ? 'default' : 'outline'}
             size="sm"
@@ -293,7 +293,8 @@ function BlockchainTab({ blockchain }: { blockchain: Blockchain }) {
               onClick={() => setViewMode('historical')}
             >
               <Calendar className="mr-2 h-4 w-4" />
-              Historical (2008-2009)
+              <span className="hidden sm:inline">Historical (2008-2009)</span>
+              <span className="sm:hidden">Historical</span>
             </Button>
           )}
         </div>
@@ -322,30 +323,30 @@ function BlockchainTab({ blockchain }: { blockchain: Blockchain }) {
               releases.map((release) => (
                 <Card key={release.id} className="hover:shadow-md transition-shadow">
                   <CardHeader className="pb-2">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-lg flex items-center gap-2">
-                          {release.name}
-                          {release.prerelease && (
-                            <Badge variant="secondary">Pre-release</Badge>
-                          )}
-                        </CardTitle>
-                        <CardDescription className="flex items-center gap-2 mt-1">
-                          <Tag className="h-3 w-3" />
-                          {release.tag_name}
-                          {release.published_at && (
-                            <>
-                              <span className="text-zinc-300">|</span>
-                              <Calendar className="h-3 w-3" />
-                              {formatDate(release.published_at)}
-                            </>
-                          )}
-                        </CardDescription>
-                      </div>
+                    <div className="min-w-0">
+                      <CardTitle className="text-lg flex flex-wrap items-center gap-2">
+                        <span className="truncate">{release.name}</span>
+                        {release.prerelease && (
+                          <Badge variant="secondary">Pre-release</Badge>
+                        )}
+                      </CardTitle>
+                      <CardDescription className="flex flex-wrap items-center gap-2 mt-1">
+                        <span className="flex items-center gap-1">
+                          <Tag className="h-3 w-3 flex-shrink-0" />
+                          <span className="truncate">{release.tag_name}</span>
+                        </span>
+                        {release.published_at && (
+                          <span className="flex items-center gap-1">
+                            <span className="text-zinc-300">|</span>
+                            <Calendar className="h-3 w-3 flex-shrink-0" />
+                            {formatDate(release.published_at)}
+                          </span>
+                        )}
+                      </CardDescription>
                     </div>
                   </CardHeader>
                   <CardContent className="pt-2">
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <Button
                         size="sm"
                         onClick={() => handleDownload(release.tag_name, true)}
@@ -466,8 +467,8 @@ function BlockchainTab({ blockchain }: { blockchain: Blockchain }) {
 
 function App() {
   return (
-    <div className="min-h-screen bg-zinc-50">
-      <div className="container mx-auto py-8 px-4">
+    <div className="min-h-screen bg-zinc-50 overflow-x-hidden">
+      <div className="container mx-auto py-8 px-4 max-w-full">
         <header className="mb-8 text-center">
           <h1 className="text-3xl font-bold text-zinc-900 mb-2">
             The Bitcoin Archive
