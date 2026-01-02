@@ -470,7 +470,7 @@ function App() {
       <div className="container mx-auto py-8 px-4">
         <header className="mb-8 text-center">
           <h1 className="text-3xl font-bold text-zinc-900 mb-2">
-            Blockchain Source Code Downloader
+            The Bitcoin Archive
           </h1>
           <p className="text-zinc-600">
             Download source code archives for major blockchain projects
@@ -506,8 +506,19 @@ function App() {
         </Tabs>
 
         <footer className="mt-8 text-center text-sm text-zinc-500">
-          <p>
+          <p className="mb-2">
             Source code is downloaded directly from GitHub repositories.
+          </p>
+          <p>
+            &copy; {new Date().getFullYear()}{' '}
+            <a 
+              href="https://bitcoinpay.jp" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="hover:text-zinc-700 underline"
+            >
+              BitcoinPay株式会社
+            </a>
           </p>
         </footer>
       </div>
