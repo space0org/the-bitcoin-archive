@@ -9,6 +9,84 @@ import { Download, ExternalLink, Github, Tag, Calendar, Loader2 } from 'lucide-r
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
+const S3_BUCKET = 'bitcoinpay-visa-archive-1767099061'
+const S3_REGION = 'us-east-1'
+const S3_BASE_URL = `https://${S3_BUCKET}.s3.${S3_REGION}.amazonaws.com`
+
+const SPECIAL_FILE_EXTENSIONS: Record<string, Record<string, string>> = {
+  bitcoin: {
+    'bitcoin-pre-release-nov08': 'tgz',
+    'v0.1.0': 'tgz',
+    'v0.1.3': 'rar',
+  },
+}
+
+const S3_RELEASES: Record<string, Set<string>> = {
+  bitcoin: new Set([
+    'v28.3', 'v29.2', 'v30.0', 'v29.1', 'v28.2', 'v29.0', 'v28.1', 'v27.2', 'v28.0',
+    'v26.2', 'v27.1', 'v27.0', 'v25.2', 'v26.1', 'v26.0', 'v24.2', 'v25.1', 'v25.0',
+    'v24.1', 'v23.2', 'v23.1', 'v24.0.1', 'v22.1', 'v23.0', 'v22.0', 'v0.21.1',
+    'v0.21.0', 'v0.20.1', 'v0.20.0', 'v0.19.1', 'v0.19.0.1', 'v0.18.1', 'v0.18.0',
+    'v0.17.1', 'v0.17.0.1', 'v0.17.0', 'v0.14.3', 'v0.15.2', 'v0.16.3', 'v0.16.2',
+    'v0.16.1', 'v0.16.0', 'v0.15.1', 'v0.15.0.1', 'v0.15.0', 'v0.14.2', 'v0.14.1',
+    'v0.14.0', 'v0.13.2', 'v0.13.1', 'v0.13.0', 'v0.12.1', 'v0.12.0', 'v0.11.2',
+    'v0.10.4', 'v0.11.1', 'v0.10.3', 'v0.10.2', 'v0.10.1', 'v0.10.0',
+    'v0.9.5', 'v0.9.4', 'v0.9.3', 'v0.9.2.1', 'v0.9.2', 'v0.9.1', 'v0.9.0',
+    'v0.8.6', 'v0.8.5', 'v0.8.4', 'v0.8.3', 'v0.8.2', 'v0.8.1', 'v0.8.0',
+    'v0.7.2', 'v0.7.1', 'v0.7.0',
+    'v0.6.3', 'v0.6.2.2', 'v0.6.2.1', 'v0.6.2', 'v0.6.1', 'v0.6.0',
+    'v0.5.3', 'v0.5.2', 'v0.5.1', 'v0.5.0',
+    'v0.4.0',
+    'v0.3.21', 'v0.3.20', 'v0.3.19', 'v0.3.18', 'v0.3.17', 'v0.3.15', 'v0.3.14',
+    'v0.3.13', 'v0.3.12', 'v0.3.10', 'v0.3.8', 'v0.3.7', 'v0.3.6', 'v0.3.3',
+    'v0.3.2', 'v0.3.1', 'v0.3.0',
+    'v0.2.13', 'v0.2.12', 'v0.2.11', 'v0.2.10', 'v0.2.9', 'v0.2.8', 'v0.2.7',
+    'v0.2.6', 'v0.2.5', 'v0.2.4', 'v0.2.2', 'v0.2.0',
+    'v0.1.6test1', 'v0.1.5', 'v0.1.3', 'v0.1.0',
+    'bitcoin-pre-release-nov08',
+  ]),
+  'bitcoin-sv': new Set([
+    'v1.1.1', 'v1.1.0', 'v1.0.16', 'v1.0.15.1', 'v1.0.15', 'v1.0.14', 'v1.0.13',
+    'v1.0.11', 'v1.0.10', 'v1.0.9', 'v1.0.8', 'v1.0.7.1', 'v1.0.7', 'v1.0.6',
+    'v1.0.5', 'v1.0.4', 'v1.0.3', 'v1.0.2', 'v1.0.1', 'v1.0.0', 'v0.2.1', 'v0.2.0',
+    'v0.1.1', 'v0.1.0',
+  ]),
+  'bitcoin-cash': new Set([
+    'v28.0.1', 'v28.0.0', 'v27.1.0', 'v27.0.0', 'v26.1.0', 'v26.0.0', 'v25.0.0',
+    'v24.1.0', 'v24.0.0', 'v23.1.0', 'v23.0.0', 'v22.2.0', 'v22.1.0', 'v22.0.0',
+    'v0.21.2', 'v0.21.1', 'v0.21.0',
+  ]),
+  'bitcoin-private': new Set([
+    '1.0.15', '1.0.14', '1.0.13', '1.0.12-1-b27c722', '1.0.12-1', '1.0.12-69aa9ce',
+    '1.0.12-8e6c23c', 'v1.0.11-d3905b0', '1.0.11-5d06772', '1.0.10-2', '1.0.10-9ee1d690',
+  ]),
+  litecoin: new Set([
+    'v0.21.4', 'v0.21.3', 'v0.21.2.2', 'v0.21.2.1', 'v0.21.2', 'v0.18.1', 'v0.17.1',
+    'v0.16.3', 'v0.15.1', 'v0.14.2', 'v0.13.3', 'v0.13.2.1', 'v0.10.4.0',
+  ]),
+}
+
+function getS3Url(blockchainId: string, tagName: string): string {
+  const safeTag = tagName.replace(/\//g, '_')
+  let ext = 'zip'
+  if (SPECIAL_FILE_EXTENSIONS[blockchainId]?.[tagName]) {
+    ext = SPECIAL_FILE_EXTENSIONS[blockchainId][tagName]
+  }
+  return `${S3_BASE_URL}/blockchain-zips/${blockchainId}/${safeTag}.${ext}`
+}
+
+function isReleaseInS3(blockchainId: string, tagName: string): boolean {
+  return S3_RELEASES[blockchainId]?.has(tagName) ?? false
+}
+
+function getDownloadUrl(blockchainId: string, tagName: string, githubUrl: string): string {
+  if (isReleaseInS3(blockchainId, tagName)) {
+    return getS3Url(blockchainId, tagName)
+  }
+  const repoPath = githubUrl.replace('https://github.com/', '')
+  return `https://github.com/${repoPath}/archive/refs/tags/${tagName}.zip`
+}
+
 interface Blockchain {
   id: string
   name: string
@@ -211,26 +289,6 @@ function BlockchainTab({ blockchain }: { blockchain: Blockchain }) {
     })
   }
 
-  const handleDownload = async (tagName: string, useBackendApi: boolean = false) => {
-    if (useBackendApi) {
-      // For Releases tab: Use backend API to get S3 URL
-      try {
-        const response = await fetch(
-          `${API_BASE_URL}/api/blockchains/${blockchain.id}/download/${encodeURIComponent(tagName)}?format=zip`
-        )
-        if (response.ok) {
-          const data = await response.json()
-          window.open(data.download_url, '_blank')
-          return
-        }
-      } catch (err) {
-        console.error('Failed to get download URL from API:', err)
-      }
-    }
-    // Fallback or for All Tags tab: Use direct GitHub URL
-    const downloadUrl = `https://github.com/${blockchain.github_url.replace('https://github.com/', '')}/archive/refs/tags/${tagName}.zip`
-    window.open(downloadUrl, '_blank')
-  }
 
   if (loading) {
     return (
@@ -349,18 +407,22 @@ function BlockchainTab({ blockchain }: { blockchain: Blockchain }) {
                     <div className="flex flex-wrap gap-2">
                       <Button
                         size="sm"
-                        onClick={() => handleDownload(release.tag_name, true)}
+                        asChild
                       >
-                        <Download className="mr-2 h-4 w-4" />
-                        Download ZIP
+                        <a href={getDownloadUrl(blockchain.id, release.tag_name, blockchain.github_url)} download>
+                          <Download className="mr-2 h-4 w-4" />
+                          Download ZIP
+                        </a>
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => window.open(release.html_url, '_blank')}
+                        asChild
                       >
-                        <ExternalLink className="mr-2 h-4 w-4" />
-                        View Release
+                        <a href={release.html_url} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="mr-2 h-4 w-4" />
+                          View Release
+                        </a>
                       </Button>
                     </div>
                   </CardContent>
@@ -389,10 +451,12 @@ function BlockchainTab({ blockchain }: { blockchain: Blockchain }) {
                   <CardContent className="pt-2">
                     <Button
                       size="sm"
-                      onClick={() => handleDownload(tag.name)}
+                      asChild
                     >
-                      <Download className="mr-2 h-4 w-4" />
-                      Download ZIP
+                      <a href={getDownloadUrl(blockchain.id, tag.name, blockchain.github_url)} download>
+                        <Download className="mr-2 h-4 w-4" />
+                        Download ZIP
+                      </a>
                     </Button>
                   </CardContent>
                 </Card>
@@ -430,10 +494,12 @@ function BlockchainTab({ blockchain }: { blockchain: Blockchain }) {
                   <CardContent className="pt-2">
                     <Button
                       size="sm"
-                      onClick={() => handleDownload(release.tag_name, true)}
+                      asChild
                     >
-                      <Download className="mr-2 h-4 w-4" />
-                      Download {release.format.toUpperCase()}
+                      <a href={getDownloadUrl(blockchain.id, release.tag_name, blockchain.github_url)} download>
+                        <Download className="mr-2 h-4 w-4" />
+                        Download {release.format.toUpperCase()}
+                      </a>
                     </Button>
                   </CardContent>
                 </Card>
